@@ -3,7 +3,7 @@
 # Construimos nuestro vector de datos, dropeo la variable Centro
 data <- aux_df %>% ungroup()%>% select(-c(ID, centro))
 
-# Suponiendo que el modelo es probit:
+# Suponiendo que el modelo es logit:
 
 ################################################################################
 # Calculates the maximum likelihood estimates of a logistic regression model
@@ -17,7 +17,7 @@ data <- aux_df %>% ungroup()%>% select(-c(ID, centro))
 # ll : -2ln L (deviance)
 #
 ################################################################################
-mle.prob = function(fmla, data)
+mle.probit = function(fmla, data)
 {
   # Define the negative log likelihood function
   logl <- function(theta,x,y){
@@ -39,22 +39,12 @@ mle.prob = function(fmla, data)
   theta.start = rep(0,(dim(x)[2]))
   names(theta.start) = colnames(x)
   # Calculate the maximum likelihood
-  mle = optim(theta.start,logl,x=x,y=y,hessian=F)
-  # Obtain regression coefficients
-  beta = mle$par
-  
-  # Calculate the Information matrix
-  # The variance of a Bernouilli distribution is given by p(1-p)
-  p = 1/(1+exp(-x%*%beta))
-  V = array(0,dim=c(dim(x)[1],dim(x)[1]))
-  diag(V) = p*(1-p)
-  IB = t(x)%*%V%*%x
-  
-  # Return estimates
-  out = list(beta=beta,vcov=solve(IB),dev=2*mle$value)
+  mle = optim(theta.start,logl,x=x,y=y,hessian=T)
+  out = list(beta=mle$par,vcov=solve(mle$hessian),ll=2*mle$value)
 }
-################################################################################
+###############################################################################
 
 fmla = as.formula("D~edad+noroeste+sureste+noreste+occidente+n_menores+n_mayores+a_escolaridad") #Create model formula
-myprobit = mle.prob(fmla, data) #Estimate coefficients
+probit = mle.probit(fmla, data) #Estimate coefficients
+probit
 
